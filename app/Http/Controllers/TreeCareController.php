@@ -20,6 +20,16 @@ class TreeCareController extends Controller
 
         $tree->progress += 1;
 
+        if ($tree->progress >= 5) {
+            $tree->level += 1;
+            $tree->progress = 0;
+        }
+
+        if ($tree->level >= 10) {
+            $tree->level = 10;
+            $tree->status = 'MATURE';
+        }
+
         $tree->health = min(100, $tree->health + 20);
 
         $tree->last_cared_at = now();
