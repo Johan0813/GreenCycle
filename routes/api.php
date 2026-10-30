@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TreeCareController;
 
 Route::name('greencycle.')
 ->group(function (): void {
@@ -20,6 +21,9 @@ Route::name('greencycle.')
 
         Route::post('logout', [AuthController::class, 'logout'])
             ->name('logout');
+        
+        Route::post('trees/{tree}/care', [TreeCareController::class, 'care'])
+            ->name('trees.care');
 
     });
 });
