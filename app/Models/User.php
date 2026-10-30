@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     use HasFactory;
+    use HasApiTokens;
 
     protected $table = 'users';
 
@@ -19,6 +21,11 @@ class User extends Authenticatable
         'password',
         'coins',
     ];
+
+    protected $hidden = [
+    'password',
+    'remember_token',
+];
 
     public function trees()
     {
