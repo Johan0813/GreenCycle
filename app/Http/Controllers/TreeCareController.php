@@ -23,22 +23,25 @@ class TreeCareController extends Controller
 
             if ($tree->status !== 'ACTIVE') {
                 return response()->json([
-                    'message' => 'Este arbol no puede recibir mas cuidados.',
+                    'message' => 'El árbol no puede recibir más cuidados porque su estado es ' . $tree->status . '.',
                     'status' => $tree->status,
-                ], 409);
+                    ], 409);
             }
+
+            
             if ($tree->next_care_at && now()->lt($tree->next_care_at)) {
                 return response()->json([
-                    'message' => 'El arbol no puede recibir cuidados aun.',
+                    'message' => 'El árbol se encuentra en período de enfriamiento.',
                     'next_care_at' => $tree->next_care_at->toISOString(),
-                ], 409);
+                    ], 409);
             }
+
             $healthService->applyDecay($tree);
             $stateService->updateState($tree);
 
-            if ($tree->status === 'DEAD') {
+            if ($tree->status === 'DEAD'){
                 return response()->json([
-                    'message' => 'El arbol ha muerto por falta de cuidados.',
+                    'message' => 'El arbol ha muerto por falta de cuidados. ',
                     'status' => $tree->status,
                 ], 409);
             }
@@ -46,8 +49,6 @@ class TreeCareController extends Controller
 
 
             $tree->progress += 1;
-
-
 
             if ($tree->progress >= 5) {
                 $tree->level += 1;
@@ -66,14 +67,20 @@ class TreeCareController extends Controller
 
             $tree->save();
 
+        
+        
             return response()->json([
-                'message' => 'El arbol fue cuidado correctamente.',
-                'id_tree' => $tree->id_tree,
-                'progress' => $tree->progress,
-                'health' => $tree->health,
-                'last_cared_at' => $tree->last_cared_at->toISOString(),
-                'next_care_at' => $tree->next_care_at->toISOString(),
-            ], 200);
+                'message' => 'Cuidado aplicado con éxito',
+                'tree' => [
+                    'id' => $tree->id_tree,
+                    'level' => $tree->level,
+                    'health' => $tree->health,
+                    'progress' => $tree->progress,
+                    'status' => $tree->status,
+                    'next_care_at' => $tree->next_care_at->toISOString(),
+                     ],
+                ], 200);
+
         });
     }
 }
