@@ -450,5 +450,116 @@ class TreeCareTest extends TestCase
         $this->assertEquals(0, $tree->progress);
         $this->assertEquals('HARVESTED', $tree->status);
 }
+public function test_care_restores_twenty_health_points(): void
+    {
+        $user = User::factory()->create();
 
+        $item = Item::create([
+            'name' => 'Semilla para recuperar salud',
+            'price' => 100,
+            'item_type' => 'SEED',
+        ]);
+
+        $seedType = SeedType::create([
+            'id_item' => $item->id_item,
+            'name' => 'Arbol de recuperacion',
+            'cares_per_level' => 5,
+            'harvest_reward' => 50,
+        ]);
+
+        $tree = Trees::create([
+            'id_user' => $user->id_user,
+            'id_seed_type' => $seedType->id_seed_type,
+            'health' => 50,
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson("/api/trees/{$tree->id_tree}/care")
+            ->assertStatus(200)
+            ->assertJsonPath('tree.health', 70);
+
+        $tree->refresh();
+
+        $this->assertEquals(70, $tree->health);
+        $this->assertEquals(1, $tree->progress);
+    }
+
+
+    // PRUEBA 11: La salud nunca debe superar 100
+    public function test_care_does_not_exceed_maximum_health(): void
+    {
+        $user = User::factory()->create();
+
+        $item = Item::create([
+            'name' => 'Semilla para limite de salud',
+            'price' => 100,
+            'item_type' => 'SEED',
+        ]);
+
+        $seedType = SeedType::create([
+            'id_item' => $item->id_item,
+            'name' => 'Arbol de salud maxima',
+            'cares_per_level' => 5,
+            'harvest_reward' => 50,
+        ]);
+
+        $tree = Trees::create([
+            'id_user' => $user->id_user,
+            'id_seed_type' => $seedType->id_seed_type,
+            'health' => 95,
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson("/api/trees/{$tree->id_tree}/care")
+            ->assertStatus(200)
+            ->assertJsonPath('tree.health', 100);
+
+        $tree->refresh();
+
+        $this->assertEquals(100, $tree->health);
+        $this->assertEquals(1, $tree->progress);
+    }
+
+
+    // PRUEBA 12: El cooldown debe durar exactamente 60 minutos
+    public function test_next_care_is_exactly_sixty_minutes_later(): void
+    {
+        $user = User::factory()->create();
+
+        $item = Item::create([
+            'name' => 'Semilla para probar cooldown',
+            'price' => 100,
+            'item_type' => 'SEED',
+        ]);
+
+        $seedType = SeedType::create([
+            'id_item' => $item->id_item,
+            'name' => 'Arbol de tiempo',
+            'cares_per_level' => 5,
+            'harvest_reward' => 50,
+        ]);
+
+        $tree = Trees::create([
+            'id_user' => $user->id_user,
+            'id_seed_type' => $seedType->id_seed_type,
+            'status' => 'ACTIVE',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson("/api/trees/{$tree->id_tree}/care")
+            ->assertStatus(200);
+
+        $tree->refresh();
+
+        $this->assertNotNull($tree->last_cared_at);
+        $this->assertNotNull($tree->next_care_at);
+
+        $differenceInSeconds =
+            $tree->next_care_at->getTimestamp()
+            - $tree->last_cared_at->getTimestamp();
+
+        $this->assertSame(3600, $differenceInSeconds);
+    }
 }
